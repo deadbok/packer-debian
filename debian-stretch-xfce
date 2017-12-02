@@ -1,6 +1,6 @@
 {
   "variables": {
-      "debian_version": "9.0.0"
+      "debian_version": "9.2.1"
   },
   "builders": [
     {
@@ -25,7 +25,6 @@
       "boot_wait": "10s",
       "disk_size": 32768,
       "guest_os_type": "Debian_64",
-      "headless": true,
       "http_directory": "http",
       "iso_checksum_type": "sha512",
       "iso_checksum_url": "http://cdimage.debian.org/cdimage/release/{{user `debian_version`}}/amd64/iso-cd/SHA512SUMS",
@@ -39,8 +38,43 @@
       "virtualbox_version_file": ".vbox_version",
       "vm_name": "debian-{{user `debian_version`}}-amd64",
       "vboxmanage": [
-        [ "modifyvm", "{{.Name}}", "--memory", "512" ],
+        [ "modifyvm", "{{.Name}}", "--memory", "2048" ],
         [ "modifyvm", "{{.Name}}", "--cpus", "1" ]
+      ]
+    },
+    {
+      "type": "qemu",
+      "boot_command": [
+        "<esc><wait>",
+        "install <wait>",
+        "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed_stretch_qemu.cfg <wait>",
+        "debian-installer=en_US <wait>",
+        "auto <wait>",
+        "locale=en_US <wait>",
+        "kbd-chooser/method=us <wait>",
+        "keyboard-configuration/xkb-keymap=us <wait>",
+        "netcfg/get_hostname={{ .Name }} <wait>",
+        "netcfg/get_domain=vagrantup.com <wait>",
+        "fb=false <wait>",
+        "debconf/frontend=noninteractive <wait>",
+        "console-setup/ask_detect=false <wait>",
+        "console-keymaps-at/keymap=us <wait>",
+        "<enter><wait>"
+      ],
+      "boot_wait": "10s",
+      "disk_size": 32768,
+      "http_directory": "http",
+      "iso_checksum_type": "sha512",
+      "iso_checksum_url": "http://cdimage.debian.org/cdimage/release/{{user `debian_version`}}/amd64/iso-cd/SHA512SUMS",
+      "iso_url": "http://cdimage.debian.org/cdimage/release/{{user `debian_version`}}/amd64/iso-cd/debian-{{user `debian_version`}}-amd64-netinst.iso",
+      "ssh_username": "vagrant",
+      "ssh_password": "vagrant",
+      "ssh_port": 22,
+      "ssh_wait_timeout": "10000s",
+      "shutdown_command": "echo 'vagrant'|sudo -S /sbin/shutdown -hP now",
+      "vm_name": "debian-{{user `debian_version`}}-amd64",
+      "qemuargs": [
+        [ "-m", "2048M" ]
       ]
     }
   ],
@@ -48,8 +82,8 @@
     {
       "type": "vagrant",
       "compression_level": "9",
-      "output": "debian-{{user `debian_version`}}-amd64_{{.Provider}}.box",
-      "only": ["virtualbox-iso"]
+      "output": "debian-xfce-{{user `debian_version`}}-amd64_{{.Provider}}.box",
+      "only": ["virtualbox-iso", "qemu"]
     }
   ],
   "provisioners": [
@@ -62,10 +96,11 @@
         "scripts/networking.sh",
         "scripts/sudoers.sh",
         "scripts/vagrant.sh",
+        "scripts/xfce.sh",
         "scripts/vbaddguest.sh",
         "scripts/cleanup.sh"
       ],
-      "only": ["virtualbox-iso"]
+      "only": ["virtualbox-iso", "qemu"]
     }
   ]
 }
